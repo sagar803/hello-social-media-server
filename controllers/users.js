@@ -11,6 +11,21 @@ export const getUser = async (req, res) => {
   }
 };
 
+// GET ALL USERS
+export const getUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+    const formattedUsers = users.map(
+    ({ _id, firstName, lastName, occupation, location, picturePath }) => {
+      return { _id, fullName: firstName+" "+lastName , firstName, lastName, occupation, location, picturePath };
+    }
+    );
+    console.log(formattedUsers)
+    res.status(200).json(formattedUsers);
+  } catch (err) {
+    res.status(404).json({ message: err.message });
+  }
+};
 
 export const getUserFriends = async (req, res) => {
   try {
@@ -65,3 +80,15 @@ export const addRemoveFriend = async (req, res) => {
     res.status(404).json({ message: err.message });
   }
 };
+
+//DELETE
+export const deleteUser = async (req, res) => {
+  try {
+    const {id} = req.params;
+    console.log(id);
+    await User.findByIdAndDelete(id);      
+    return res.status(201).json({message: "Account successfully deleted"})  
+  } catch (error) {
+    res.status(404).json({message: error.message})
+  }
+}

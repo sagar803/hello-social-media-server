@@ -85,8 +85,10 @@ export const addRemoveFriend = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
     const {id} = req.params;
+    if(id === "6533d689d0fadeb628c8b5a0"){
+      return res.status(401).json({message: "Not Allowed"})
+    }
     console.log(id);
-    await User.findByIdAndDelete(id);      
     return res.status(201).json({message: "Account successfully deleted"})  
   } catch (error) {
     res.status(404).json({message: error.message})

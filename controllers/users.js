@@ -16,11 +16,18 @@ export const getUsers = async (req, res) => {
   try {
     const users = await User.find();
     const formattedUsers = users.map(
-    ({ _id, firstName, lastName, occupation, location, picturePath }) => {
-      return { _id, fullName: firstName+" "+lastName , firstName, lastName, occupation, location, picturePath };
-    }
+      ({ _id, firstName, lastName, occupation, location, picturePath }) => {
+        return {
+          _id,
+          fullName: firstName + " " + lastName,
+          firstName,
+          lastName,
+          occupation,
+          location,
+          picturePath,
+        };
+      }
     );
-    console.log(formattedUsers)
     res.status(200).json(formattedUsers);
   } catch (err) {
     res.status(404).json({ message: err.message });
@@ -45,7 +52,6 @@ export const getUserFriends = async (req, res) => {
     res.status(404).json({ message: err.message });
   }
 };
-
 
 // UPDATE
 export const addRemoveFriend = async (req, res) => {
@@ -84,13 +90,12 @@ export const addRemoveFriend = async (req, res) => {
 //DELETE
 export const deleteUser = async (req, res) => {
   try {
-    const {id} = req.params;
-    if(id === "6533d689d0fadeb628c8b5a0"){
-      return res.status(401).json({message: "Not Allowed"})
+    const { id } = req.params;
+    if (id === "6533d689d0fadeb628c8b5a0") {
+      return res.status(401).json({ message: "Not Allowed" });
     }
-    console.log(id);
-    return res.status(201).json({message: "Account successfully deleted"})  
+    return res.status(201).json({ message: "Account successfully deleted" });
   } catch (error) {
-    res.status(404).json({message: error.message})
+    res.status(404).json({ message: error.message });
   }
-}
+};

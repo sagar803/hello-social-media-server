@@ -24,7 +24,6 @@ export const createChatId = async (req, res) => {
 export const getChatId = async (req, res) => {
   try {
     const { userId1, userId2 } = req.query;
-    console.log(userId1);
 
     if (!userId1 || !userId2) {
       return res

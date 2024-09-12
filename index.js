@@ -84,7 +84,7 @@ mongoose
     io.on("connection", (socket) => {
       socket.on("userOnline", (userId) => {
         onlineUsers[userId] = socket.id;
-        // console.log(`User ${userId} is online with socket id ${socket.id}`);
+        io.emit("onlineUsers", Object.keys(onlineUsers));
         console.log(onlineUsers);
       });
 
@@ -120,6 +120,7 @@ mongoose
           if (onlineUsers[userId] === socket.id) {
             delete onlineUsers[userId];
             console.log(`User ${userId} went offline`);
+            io.emit("onlineUsers", Object.keys(onlineUsers));
             break;
           }
         }

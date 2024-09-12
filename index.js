@@ -11,12 +11,17 @@ import { fileURLToPath } from "url";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
 import postRoutes from "./routes/posts.js";
+import chatRoutes from "./routes/chat.js";
 import { register } from "./controllers/auth.js";
 import { createPost } from "./controllers/posts.js";
 import { verifyToken } from "./middleware/auth.js";
 import User from "./models/User.js";
 import Post from "./models/Post.js";
 import { users, posts } from "./data/index.js";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import { saveMessage } from "./controllers/chat.js";
+import Message from "./models/Message.js";
 
 // CONFIGURATIONS
 
@@ -36,37 +41,93 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors());
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
-
-// FILE STORAGE 
+// FILE STORAGE
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "public/assets");
-    },
-    filename: function (req, file, cb) {
-      cb(null, file.originalname);
-    },
+  destination: function (req, file, cb) {
+    cb(null, "public/assets");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
 });
 const upload = multer({ storage });
 
 // ROUTES WITH FILES
 app.post("/auth/register", upload.single("picture"), register);
-app.post("/posts" , verifyToken, upload.single("picture"), createPost);
+app.post("/posts", verifyToken, upload.single("picture"), createPost);
 
 // ROUTES
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
-app.use("/posts" , postRoutes);
+app.use("/posts", postRoutes);
+app.use("/chat", chatRoutes);
 
 // MONGOOSE SETUP
 /* if there is an error regarding ip address you can visit myipaddress.com and add your ip address to your mongoDB network access*/
 const port = process.env.PORT || 6001;
-mongoose.connect(process.env.MONGO_URL ,{
-    useNewUrlParser : true, 
+mongoose
+  .connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
     useUnifiedTopology: true,
-}).then(()=> {
-    app.listen(port, ()=> console.log(`Server Port ${port}`));
+  })
+  .then(() => {
+    const httpServer = createServer(app); // Create HTTP server with Express
 
-    // ADD DATA ONE TIME
-    // User.insertMany(users);
-    // Post.insertMany(posts);
-}).catch((error)=> console.log(error))
+    const io = new Server(httpServer, {
+      cors: {
+        origin: "*", // Adjust CORS for your frontend
+      },
+    });
+
+    const onlineUsers = {};
+
+    io.on("connection", (socket) => {
+      socket.on("userOnline", (userId) => {
+        onlineUsers[userId] = socket.id;
+        // console.log(`User ${userId} is online with socket id ${socket.id}`);
+        console.log(onlineUsers);
+      });
+
+      socket.on(
+        "privateMessage",
+        async ({ chatId, senderId, receiverId, message }) => {
+          const receiverSocketId = onlineUsers[receiverId];
+
+          try {
+            const newMessage = new Message({
+              chatId,
+              senderId: senderId,
+              recipientId: receiverId,
+              message: message,
+              timestamp: Date.now(),
+            });
+
+            if (receiverSocketId) {
+              io.to(receiverSocketId).emit("receivePrivateMessage", newMessage);
+            } else {
+              console.log(`User ${receiverId} is not online.`);
+            }
+
+            await newMessage.save();
+          } catch (error) {
+            console.error("Error saving message:", error);
+          }
+        }
+      );
+
+      socket.on("disconnect", () => {
+        for (let userId in onlineUsers) {
+          if (onlineUsers[userId] === socket.id) {
+            delete onlineUsers[userId];
+            console.log(`User ${userId} went offline`);
+            break;
+          }
+        }
+      });
+    });
+
+    httpServer.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  })
+  .catch((error) => console.log(error));

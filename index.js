@@ -90,7 +90,7 @@ mongoose
 
       socket.on(
         "privateMessage",
-        async ({ chatId, senderId, receiverId, message }) => {
+        async ({ chatId, senderId, receiverId, message, timestamp }) => {
           const receiverSocketId = onlineUsers[receiverId];
 
           try {
@@ -99,7 +99,7 @@ mongoose
               senderId: senderId,
               recipientId: receiverId,
               message: message,
-              timestamp: Date.now(),
+              timestamp,
             });
 
             if (receiverSocketId) {
